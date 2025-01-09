@@ -1,128 +1,105 @@
-# Cross-chain Uniswap V3 Liquidity Provider using Across+
+# Cross-chain Aave Deposit App using Across+
 
-A cross-chain DApp that allows users to provide liquidity to Uniswap V3 pools across different chains using Across+ embedded cross-chain actions. The app enables users to bridge USDC from Arbitrum Sepolia and automatically add liquidity to USDC/WETH pool on Optimism Sepolia in a single transaction.
+This application demonstrates how to use Across+ embedded cross-chain actions to bridge WETH from Optimism Sepolia and automatically deposit it into Aave on Arbitrum Sepolia in a single transaction.
+
+## Overview
+
+This dApp enables users to:
+1. Start with WETH on Optimism Sepolia
+2. Bridge to Arbitrum Sepolia
+3. Automatically deposit into Aave pool
+4. All in one seamless transaction
 
 ## Architecture
 
 The application consists of three main components:
 
-1. **Message Generator Contract** (Source Chain - Arbitrum Sepolia)
-   - Generates formatted instructions for the multicall handler
-   - Handles message generation for cross-chain actions
-   - Deployed on the source chain
+1. **Message Generator Contract** (Optimism Sepolia)
+   - Generates formatted instructions for cross-chain actions
+   - Handles message generation for Aave deposit
+   - Creates approval and deposit calldata
 
-2. **Multicall Handler** (Destination Chain - Optimism Sepolia)
+2. **Multicall Handler** (Arbitrum Sepolia)
    - Pre-deployed by Across
    - Executes instructions after bridging
-   - Handles token approvals and liquidity addition
+   - Handles token approvals and Aave deposits
 
 3. **Frontend Application**
-   - User interface for amount input
-   - Wallet connection handling
-   - Contract interactions and API integrations
-
-## Prerequisites
-
-- Node.js v23+
-- MetaMask or similar Web3 wallet
-- Testnet ETH on Arbitrum Sepolia
-- Testnet USDC on Arbitrum Sepolia
-- Basic knowledge of Solidity and React
+   - User interface for deposit amount
+   - Wallet connection
+   - Transaction handling
 
 ## Contract Addresses
 
 ```javascript
 const ADDRESSES = {
-    // Arbitrum Sepolia
-    liquidityProvider: "0x75024f1ace6d642f9ebbf06e573d6ec199bd15a3",
-    multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
-    
-    // Optimism Sepolia
-    uniswapPositionManager: "0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2",
-    usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-    optimismChainId: 11155420,
-    
-    across: "0x4e8E101924eDE233C13e2D8622DC8aED2872d505"
-}
+  // Optimism Sepolia
+  multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
+  weth: "0x4200000000000000000000000000000000000006",
+  acrossOP: "0x4e8E101924eDE233C13e2D8622DC8aED2872d505", //spokepool
+  generateMessage: "0x88075d5312C85eD2d2D68d30bDBB51Cb92479Feb",
+
+  // Arbitrum Sepolia
+  aave: "0x82405D1a189bd6cE4667809C35B37fBE136A4c5B",
+  arbitrumChainId: "421614",
+  acrossArb: "0x7E63A5f1a8F0B4d0934B2f2327DAED3F6bb2ee75", //spokepool
+  arbWeth: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+};
 ```
 
-## Setup
+## Prerequisites
 
-1. Install dependencies:
+- Node.js v23+
+- MetaMask or other Web3 wallet
+- WETH on Optimism Sepolia
+- Test ETH on both networks
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd [repository-name]
+```
+
+2. Install dependencies:
 ```bash
 npm install
-```
-
-2. Set up environment:
-```bash
 npx shadcn@latest init -d
 npm i ethers
 ```
 
-3. Deploy Message Generator Contract (using Remix or Foundry):
+3. Deploy Message Generator contract (using Remix or Foundry):
 ```bash
 # Using Foundry
-forge create src/UniV3MessageGenerator.sol:liquidityProvider --broadcast --interactive --rpc-url https://arbitrum-sepolia-rpc.publicnode.com
+forge create src/GenerateMessageHelper.sol:GenerateMessageHelper --broadcast --interactive --rpc-url https://optimism-sepolia-rpc.publicnode.com
 ```
 
-4. Update contract addresses in your configuration.
+## Smart Contract Overview
 
-## Features
+The `GenerateMessageHelper` contract creates properly formatted messages for the Across+ multicall handler, containing:
+- Token approval call
+- Aave deposit call
+- Fallback recipient for safety
 
-- Wallet connection and USDC balance display
-- Cross-chain liquidity provision
-- Automatic bridging and pool position creation
-- Real-time transaction status updates
-- Error handling and user feedback
-- Customizable liquidity ranges
+Key function:
+```solidity
+function generateMessageForMulticallHandler(
+    address userAddress,
+    address aavePool,
+    uint256 depositAmount,
+    address depositCurrency,
+    uint16 aaveReferralCode
+) external pure returns (bytes memory)
+```
 
 ## Usage
 
-1. Connect your wallet
-2. Enter USDC amount to provide as liquidity
+1. Connect wallet to Optimism Sepolia
+2. Enter WETH amount to deposit
 3. Click "Add Liquidity"
-4. Confirm the transaction in your wallet
-5. Wait for cross-chain transaction completion
-
-## Technical Flow
-
-1. **Message Generation**
-   - Creates approval instruction
-   - Creates liquidity position instruction
-   - Packages instructions for multicall handler
-
-2. **Bridge Integration**
-   - Gets quote from Across API
-   - Initiates bridge transaction with embedded actions
-
-3. **Destination Execution**
-   - Multicall handler receives tokens
-   - Executes approval and position creation
-   - Completes liquidity provision
-
-## Smart Contract Functions
-
-### Main Function: generateLiquidityMessage
-```solidity
-function generateLiquidityMessage(
-    address user,
-    address positionManager,
-    address token0,        
-    address token1,        
-    uint24 fee,           
-    int24 tickLower,
-    int24 tickUpper,
-    uint256 amount0Desired,
-    uint256 amount1Desired
-) external view returns (bytes memory)
-```
-
-## Security Considerations
-
-- Uses fallback recipient for safety
-- Includes deadline checks
-- Validates user inputs
-- Handles transaction failures
+4. Confirm transaction
+5. Wait for cross-chain execution
 
 ## Development
 
@@ -134,6 +111,36 @@ npm run dev
 npm run build
 ```
 
+## Technical Flow
+
+1. **Generate Message**
+   - Creates approval instruction
+   - Creates Aave deposit instruction
+   - Packages for multicall handler
+
+2. **Get Bridge Quote**
+   ```javascript
+   const quoteResponse = await fetch(
+     'https://across-v2.api.across.to/suggested-fees?...'
+   );
+   ```
+
+3. **Execute Bridge Transaction**
+   ```javascript
+   const tx = await acrossContract.depositV3(
+     userAddress,
+     ADDRESSES.multicallHandler,
+     // ... other parameters
+   );
+   ```
+
+## Security Features
+
+- Fallback recipient for failed transactions
+- Safe token approvals
+- Transaction validation
+- Balance checks
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests.
@@ -141,8 +148,12 @@ Feel free to submit issues and enhancement requests.
 ## Resources
 
 - [Across+ Documentation](https://docs.across.to)
-- [Uniswap V3 Documentation](https://docs.uniswap.org/protocol/v3/overview)
-- [Ethers Documentation](https://docs.ethers.org/v6/)
+- [Aave Documentation](https://docs.aave.com)
+- [Contract Deployments](https://docs.across.to/v/developer-docs/)
+
+## Support
+
+Join our [Discord](https://discord.gg/across) for support and discussions.
 
 ## License
 
