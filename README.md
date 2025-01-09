@@ -1,36 +1,149 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cross-chain Uniswap V3 Liquidity Provider using Across+
 
-## Getting Started
+A cross-chain DApp that allows users to provide liquidity to Uniswap V3 pools across different chains using Across+ embedded cross-chain actions. The app enables users to bridge USDC from Arbitrum Sepolia and automatically add liquidity to USDC/WETH pool on Optimism Sepolia in a single transaction.
 
-First, run the development server:
+## Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+The application consists of three main components:
+
+1. **Message Generator Contract** (Source Chain - Arbitrum Sepolia)
+   - Generates formatted instructions for the multicall handler
+   - Handles message generation for cross-chain actions
+   - Deployed on the source chain
+
+2. **Multicall Handler** (Destination Chain - Optimism Sepolia)
+   - Pre-deployed by Across
+   - Executes instructions after bridging
+   - Handles token approvals and liquidity addition
+
+3. **Frontend Application**
+   - User interface for amount input
+   - Wallet connection handling
+   - Contract interactions and API integrations
+
+## Prerequisites
+
+- Node.js v23+
+- MetaMask or similar Web3 wallet
+- Testnet ETH on Arbitrum Sepolia
+- Testnet USDC on Arbitrum Sepolia
+- Basic knowledge of Solidity and React
+
+## Contract Addresses
+
+```javascript
+const ADDRESSES = {
+    // Arbitrum Sepolia
+    liquidityProvider: "0x75024f1ace6d642f9ebbf06e573d6ec199bd15a3",
+    multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
+    
+    // Optimism Sepolia
+    uniswapPositionManager: "0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2",
+    usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+    optimismChainId: 11155420,
+    
+    across: "0x4e8E101924eDE233C13e2D8622DC8aED2872d505"
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies:
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Set up environment:
+```bash
+npx shadcn@latest init -d
+npm i ethers
+```
 
-## Learn More
+3. Deploy Message Generator Contract (using Remix or Foundry):
+```bash
+# Using Foundry
+forge create src/UniV3MessageGenerator.sol:liquidityProvider --broadcast --interactive --rpc-url https://arbitrum-sepolia-rpc.publicnode.com
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Update contract addresses in your configuration.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Wallet connection and USDC balance display
+- Cross-chain liquidity provision
+- Automatic bridging and pool position creation
+- Real-time transaction status updates
+- Error handling and user feedback
+- Customizable liquidity ranges
 
-## Deploy on Vercel
+## Usage
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Connect your wallet
+2. Enter USDC amount to provide as liquidity
+3. Click "Add Liquidity"
+4. Confirm the transaction in your wallet
+5. Wait for cross-chain transaction completion
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technical Flow
+
+1. **Message Generation**
+   - Creates approval instruction
+   - Creates liquidity position instruction
+   - Packages instructions for multicall handler
+
+2. **Bridge Integration**
+   - Gets quote from Across API
+   - Initiates bridge transaction with embedded actions
+
+3. **Destination Execution**
+   - Multicall handler receives tokens
+   - Executes approval and position creation
+   - Completes liquidity provision
+
+## Smart Contract Functions
+
+### Main Function: generateLiquidityMessage
+```solidity
+function generateLiquidityMessage(
+    address user,
+    address positionManager,
+    address token0,        
+    address token1,        
+    uint24 fee,           
+    int24 tickLower,
+    int24 tickUpper,
+    uint256 amount0Desired,
+    uint256 amount1Desired
+) external view returns (bytes memory)
+```
+
+## Security Considerations
+
+- Uses fallback recipient for safety
+- Includes deadline checks
+- Validates user inputs
+- Handles transaction failures
+
+## Development
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Contributing
+
+Feel free to submit issues and enhancement requests.
+
+## Resources
+
+- [Across+ Documentation](https://docs.across.to)
+- [Uniswap V3 Documentation](https://docs.uniswap.org/protocol/v3/overview)
+- [Ethers Documentation](https://docs.ethers.org/v6/)
+
+## License
+
+MIT License
