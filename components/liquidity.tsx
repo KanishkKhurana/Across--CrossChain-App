@@ -10,13 +10,13 @@ import { GlassCard } from "./glass-card";
 
 const ADDRESSES = {
   //op
-  multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
   weth: "0x4200000000000000000000000000000000000006",
   acrossOP: "0x4e8E101924eDE233C13e2D8622DC8aED2872d505",
   generateMessage: "0x8567f1ae02dc151eba08cf50225f2e25ba176667",
-
+  
   //arb
   //   uniswapPositionManager: "0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2",
+  multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
   aave: "0x82405D1a189bd6cE4667809C35B37fBE136A4c5B",
   arbitrumChainId: "421614",
   acrossArb: "0x7E63A5f1a8F0B4d0934B2f2327DAED3F6bb2ee75",
@@ -117,6 +117,7 @@ export default function Liquidity() {
     setLoading(true);
     setError(null);
     setSuccess(false);
+
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = provider.getSigner();
@@ -138,14 +139,15 @@ export default function Liquidity() {
           0
         );
 
+        console.log("message", message+"1dc0de");
+
       const quoteResponse = await fetch(
-        `https://acrossArb-v2.api.acrossArb.to/suggested-fees?${new URLSearchParams(
+        `https://testnet.across.to/api/suggested-fees?${new URLSearchParams(
           {
             inputToken: ADDRESSES.weth,
             inputAmount: amountIn.toString(),
             outputToken: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
             destinationChainId: ADDRESSES.arbitrumChainId,
-            message,
             recipient: ADDRESSES.multicallHandler,
           }
         )}`
